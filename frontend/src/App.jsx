@@ -768,7 +768,7 @@ export default function App() {
       try {
         result = JSON.parse(responseText);
       } catch {
-        throw new Error('El backend no devolvió una respuesta válida. Comprueba que esté iniciado e inténtalo otra vez.');
+        throw new Error('No se recibió una respuesta del servidor. Inicia frontend y backend con «npm run dev» desde la carpeta principal del proyecto.');
       }
       if (!response.ok) throw new Error(result.error || 'No se pudo estimar la nutrición.');
 
@@ -783,7 +783,7 @@ export default function App() {
       });
     } catch (error) {
       console.error('No se pudo estimar la nutrición de la comida:', error);
-      setMealNutritionError(error.message || 'No se pudo conectar con el servicio de IA.');
+      setMealNutritionError(error.message || 'No se pudo conectar con el servicio de nutrición.');
     } finally {
       setIsEstimatingMealNutrition(false);
     }
@@ -1806,9 +1806,9 @@ export default function App() {
                 <div className="field"><label htmlFor="meal-cost">Costo estimado del plato (PEN)</label><input id="meal-cost" type="number" min="0" step="0.1" value={mealCost} onChange={(event) => setMealCost(event.target.value)} placeholder="0.00" required /></div>
                 <details className="meal-nutrition-details">
                   <summary><Activity size={15} /> Estimar nutrientes o ingresarlos manualmente</summary>
-                  <p>El botón conserva el nombre “Estimar con IA”, pero consulta Open Food Facts y referencias nutricionales locales; este cálculo no usa IA. Indica una cantidad en gramos para ajustar los valores. Son estimaciones y pueden variar según el producto y su preparación.</p>
+                  <p>Consulta Open Food Facts y, si no está disponible, referencias nutricionales locales. Indica la cantidad en gramos para ajustar los valores; son aproximados.</p>
                   <button className="estimate-nutrients-button" type="button" onClick={estimateMealNutrition} disabled={isEstimatingMealNutrition || !mealName.trim() || !mealPortion.trim()}>
-                    <Sparkles size={15} /> {isEstimatingMealNutrition ? 'Estimando nutrientes…' : 'Estimar con IA'}
+                    <Sparkles size={15} /> {isEstimatingMealNutrition ? 'Estimando…' : 'Estimar'}
                   </button>
                   {mealNutritionError && <p className="nutrition-estimate-message is-error" role="alert">{mealNutritionError}</p>}
                   {mealNutritionEstimate && <p className="nutrition-estimate-message" role="status">Estimación de {mealNutritionEstimate.source} lista. Revísala y corrige los campos si hace falta antes de guardar. Los nutrientes sin datos quedan vacíos.{mealNutritionEstimate.basis ? ` Supuesto: ${mealNutritionEstimate.basis}` : ''}</p>}

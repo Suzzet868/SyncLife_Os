@@ -72,8 +72,8 @@ async function consultarOpenMeteo(ciudad) {
   const location = geoData.results?.[0];
   if (!location) throw new Error(`Open-Meteo no encontró la ciudad ${ciudad}.`);
 
-  const weatherData = await fetchJson(`https://api.open-meteo.com/v1/forecast?latitude=${location.latitude}&longitude=${location.longitude}&current_weather=true`);
-  const temperature = Number(weatherData.current_weather?.temperature);
+  const weatherData = await fetchJson(`https://api.open-meteo.com/v1/forecast?latitude=${location.latitude}&longitude=${location.longitude}&current=temperature_2m`);
+  const temperature = Number(weatherData.current?.temperature_2m);
   if (!Number.isFinite(temperature)) throw new Error('Open-Meteo no devolvió la temperatura actual.');
   return {
     ciudad: location.name,
