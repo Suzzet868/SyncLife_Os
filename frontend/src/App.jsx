@@ -1796,7 +1796,7 @@ export default function App() {
               />
               <div className="meal-step-heading meal-entry-heading">
                 <span className="meal-step-number">2</span>
-                <div><h3>Registra tu comida</h3><p>Indica la categoría, el alimento, la porción, la fecha y el costo. Luego puedes pedirle a la IA una estimación nutricional y revisarla antes de guardar.</p></div>
+                <div><h3>Registra tu comida</h3><p>Indica la categoría, el alimento, la porción, la fecha y el costo. Puedes estimar los nutrientes y revisarlos antes de guardar.</p></div>
               </div>
               <form className="meal-entry-form" onSubmit={addMealPlan}>
                 <div className="field"><label htmlFor="meal-date">Fecha</label><input id="meal-date" type="date" value={mealDate} onChange={(event) => setMealDate(event.target.value)} required /></div>
@@ -1805,13 +1805,13 @@ export default function App() {
                 <div className="field"><label htmlFor="meal-portion">Porción o cantidad</label><input id="meal-portion" value={mealPortion} disabled={isEstimatingMealNutrition} onChange={(event) => { if (event.target.value !== mealPortion) clearMealNutritionEstimate(); setMealPortion(event.target.value); }} placeholder="Ej. 1 plato (350 g)" /></div>
                 <div className="field"><label htmlFor="meal-cost">Costo estimado del plato (PEN)</label><input id="meal-cost" type="number" min="0" step="0.1" value={mealCost} onChange={(event) => setMealCost(event.target.value)} placeholder="0.00" required /></div>
                 <details className="meal-nutrition-details">
-                  <summary><Activity size={15} /> Estimar nutrientes con IA o ingresarlos manualmente</summary>
-                  <p>Especifica alimento e ingredientes y una porción aproximada para obtener una estimación más útil. La IA no reemplaza una etiqueta nutricional y sus resultados pueden variar.</p>
+                  <summary><Activity size={15} /> Estimar nutrientes o ingresarlos manualmente</summary>
+                  <p>El botón conserva el nombre “Estimar con IA”, pero consulta Open Food Facts y referencias nutricionales locales; este cálculo no usa IA. Indica una cantidad en gramos para ajustar los valores. Son estimaciones y pueden variar según el producto y su preparación.</p>
                   <button className="estimate-nutrients-button" type="button" onClick={estimateMealNutrition} disabled={isEstimatingMealNutrition || !mealName.trim() || !mealPortion.trim()}>
                     <Sparkles size={15} /> {isEstimatingMealNutrition ? 'Estimando nutrientes…' : 'Estimar con IA'}
                   </button>
                   {mealNutritionError && <p className="nutrition-estimate-message is-error" role="alert">{mealNutritionError}</p>}
-                  {mealNutritionEstimate && <p className="nutrition-estimate-message" role="status">Estimación de {mealNutritionEstimate.source} lista. Revísala y corrige los campos si hace falta antes de guardar. Los valores que la IA no pudo estimar quedan vacíos.{mealNutritionEstimate.basis ? ` Supuesto: ${mealNutritionEstimate.basis}` : ''}</p>}
+                  {mealNutritionEstimate && <p className="nutrition-estimate-message" role="status">Estimación de {mealNutritionEstimate.source} lista. Revísala y corrige los campos si hace falta antes de guardar. Los nutrientes sin datos quedan vacíos.{mealNutritionEstimate.basis ? ` Supuesto: ${mealNutritionEstimate.basis}` : ''}</p>}
                   <div className="meal-nutrient-fields">
                     <div className="field"><label htmlFor="meal-fiber">Fibra (g)</label><input id="meal-fiber" type="number" min="0" step="0.1" value={mealFiber} onChange={(event) => setMealFiber(event.target.value)} placeholder="Ej. 4.5" /></div>
                     <div className="field"><label htmlFor="meal-sodium">Sodio (mg)</label><input id="meal-sodium" type="number" min="0" step="1" value={mealSodium} onChange={(event) => setMealSodium(event.target.value)} placeholder="Ej. 320" /></div>
