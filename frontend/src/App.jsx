@@ -777,6 +777,7 @@ export default function App() {
       setMealAddedSugar(result.addedSugarG == null ? '' : String(result.addedSugarG));
       setMealMicronutrients(result.micronutrients || '');
       setMealNutritionEstimate({
+        ...result,
         source: result.source,
         estimatedAt: result.estimatedAt,
         basis: result.basis,
@@ -809,6 +810,10 @@ export default function App() {
         sodiumMg: sodium,
         addedSugarG: addedSugar,
         micronutrients: mealMicronutrients.trim(),
+        energyKcal: mealNutritionEstimate?.energyKcal ?? null,
+        proteinG: mealNutritionEstimate?.proteinG ?? null,
+        carbohydratesG: mealNutritionEstimate?.carbohydratesG ?? null,
+        fatG: mealNutritionEstimate?.fatG ?? null,
         portion: mealPortion.trim(),
         source: mealNutritionEstimate?.source || 'Registro manual',
         estimatedAt: mealNutritionEstimate?.estimatedAt || null,
@@ -1806,12 +1811,26 @@ export default function App() {
                 <div className="field"><label htmlFor="meal-cost">Costo estimado del plato (PEN)</label><input id="meal-cost" type="number" min="0" step="0.1" value={mealCost} onChange={(event) => setMealCost(event.target.value)} placeholder="0.00" required /></div>
                 <details className="meal-nutrition-details">
                   <summary><Activity size={15} /> Estimar nutrientes o ingresarlos manualmente</summary>
-                  <p>Consulta Open Food Facts y, si no está disponible, referencias nutricionales locales. Indica la cantidad en gramos para ajustar los valores; son aproximados.</p>
+                  <p>Consulta Open Food Facts y, si no está disponible, referencias nutricionales locales. Usa gramos o una medida como “1 plato”; los valores son aproximados.</p>
                   <button className="estimate-nutrients-button" type="button" onClick={estimateMealNutrition} disabled={isEstimatingMealNutrition || !mealName.trim() || !mealPortion.trim()}>
                     <Sparkles size={15} /> {isEstimatingMealNutrition ? 'Estimando…' : 'Estimar'}
                   </button>
                   {mealNutritionError && <p className="nutrition-estimate-message is-error" role="alert">{mealNutritionError}</p>}
                   {mealNutritionEstimate && <p className="nutrition-estimate-message" role="status">Estimación de {mealNutritionEstimate.source} lista. Revísala y corrige los campos si hace falta antes de guardar. Los nutrientes sin datos quedan vacíos.{mealNutritionEstimate.basis ? ` Supuesto: ${mealNutritionEstimate.basis}` : ''}</p>}
+                  {mealNutritionEstimate && <table className="mini-nutrition-table">
+                    <caption>Información nutricional estimada · {mealPortion}</caption>
+                    <thead><tr><th scope="col">Nutriente</th><th scope="col">Por porción</th></tr></thead>
+                    <tbody>
+                      <tr><th scope="row">Energía</th><td>{mealNutritionEstimate.energyKcal == null ? 'Sin dato' : `${mealNutritionEstimate.energyKcal} kcal`}</td></tr>
+                      <tr><th scope="row">Proteínas</th><td>{mealNutritionEstimate.proteinG == null ? 'Sin dato' : `${mealNutritionEstimate.proteinG} g`}</td></tr>
+                      <tr><th scope="row">Carbohidratos</th><td>{mealNutritionEstimate.carbohydratesG == null ? 'Sin dato' : `${mealNutritionEstimate.carbohydratesG} g`}</td></tr>
+                      <tr><th scope="row">Grasas</th><td>{mealNutritionEstimate.fatG == null ? 'Sin dato' : `${mealNutritionEstimate.fatG} g`}</td></tr>
+                      <tr><th scope="row">Fibra</th><td>{mealFiber === '' ? 'Sin dato' : `${mealFiber} g`}</td></tr>
+                      <tr><th scope="row">Sodio</th><td>{mealSodium === '' ? 'Sin dato' : `${mealSodium} mg`}</td></tr>
+                      <tr><th scope="row">Azúcares añadidos</th><td>{mealAddedSugar === '' ? 'Sin dato' : `${mealAddedSugar} g`}</td></tr>
+                      <tr><th scope="row">Vitaminas y minerales</th><td>{mealNutritionEstimate.micronutrients || 'Sin dato'}</td></tr>
+                    </tbody>
+                  </table>}
                   <div className="meal-nutrient-fields">
                     <div className="field"><label htmlFor="meal-fiber">Fibra (g)</label><input id="meal-fiber" type="number" min="0" step="0.1" value={mealFiber} onChange={(event) => setMealFiber(event.target.value)} placeholder="Ej. 4.5" /></div>
                     <div className="field"><label htmlFor="meal-sodium">Sodio (mg)</label><input id="meal-sodium" type="number" min="0" step="1" value={mealSodium} onChange={(event) => setMealSodium(event.target.value)} placeholder="Ej. 320" /></div>

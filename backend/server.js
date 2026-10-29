@@ -144,31 +144,48 @@ app.get('/api/synclife/weather', async (req, res) => {
 function getPortionGrams(portion) {
   const text = portion.trim().replace(',', '.');
   const withUnit = text.match(/(\d+(?:\.\d+)?)\s*(kg|g|gr|gramos?|oz|onzas?|lb|libras?)\b/i);
-  const amount = Number(withUnit?.[1] || text.match(/\d+(?:\.\d+)?/)?.[0]);
+  const amount = Number(text.match(/\d+(?:\.\d+)?/)?.[0]);
   if (!Number.isFinite(amount) || amount <= 0) return null;
-  const unit = withUnit?.[2]?.toLowerCase();
-  const factor = unit === 'kg' ? 1000
-    : ['oz', 'onza', 'onzas'].includes(unit) ? 28.3495
-      : ['lb', 'libra', 'libras'].includes(unit) ? 453.592
-        : 1;
-  return Math.min(amount * factor, 10000);
+  if (withUnit) {
+    const unit = withUnit[2].toLowerCase();
+    const factor = unit === 'kg' ? 1000
+      : ['oz', 'onza', 'onzas'].includes(unit) ? 28.3495
+        : ['lb', 'libra', 'libras'].includes(unit) ? 453.592
+          : 1;
+    return { grams: Math.min(Number(withUnit[1]) * factor, 10000), assumed: false };
+  }
+
+  const normalizedPortion = text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const servings = [
+    { terms: ['plato', 'tazon', 'bowl'], grams: 350 },
+    { terms: ['taza', 'vaso'], grams: 250 },
+    { terms: ['cucharada'], grams: 15 },
+    { terms: ['cucharadita'], grams: 5 },
+    { terms: ['rebanada', 'tajada'], grams: 30 },
+    { terms: ['unidad', 'pieza'], grams: 100 },
+    { terms: ['porcion'], grams: 200 },
+  ];
+  const serving = servings.find(({ terms }) => terms.some((term) => normalizedPortion.includes(term)));
+  if (serving) return { grams: Math.min(amount * serving.grams, 10000), assumed: true };
+  if (/^\s*\d+(?:\.\d+)?\s*$/.test(text)) return { grams: Math.min(amount, 10000), assumed: false };
+  return null;
 }
 
 const localNutritionReferences = [
-  { terms: ['res', 'bistec', 'beef'], fiberG: 0, sodiumMg: 72, addedSugarG: 0, micronutrients: 'hierro ~2.6 mg, zinc ~4.8 mg' },
-  { terms: ['pollo', 'chicken', 'pavo', 'turkey'], fiberG: 0, sodiumMg: 74, addedSugarG: 0, micronutrients: 'hierro ~1 mg, zinc ~1 mg' },
-  { terms: ['salmon', 'salmón', 'pescado', 'fish', 'atun', 'atún'], fiberG: 0, sodiumMg: 59, addedSugarG: 0, micronutrients: 'potasio ~360 mg, selenio ~25 µg' },
-  { terms: ['carne'], fiberG: 0, sodiumMg: 75, addedSugarG: 0, micronutrients: 'hierro ~2 mg, zinc ~4 mg' },
-  { terms: ['arroz', 'rice'], fiberG: 0.4, sodiumMg: 1, addedSugarG: 0, micronutrients: 'magnesio ~12 mg, hierro ~0.2 mg' },
-  { terms: ['lenteja', 'lentil', 'frejol', 'frijol', 'bean', 'garbanzo', 'chickpea'], fiberG: 7.5, sodiumMg: 2, addedSugarG: 0, micronutrients: 'hierro ~2.5 mg, magnesio ~40 mg' },
-  { terms: ['avena', 'oat'], fiberG: 10.6, sodiumMg: 2, addedSugarG: 0, micronutrients: 'hierro ~4.3 mg, magnesio ~177 mg' },
-  { terms: ['huevo', 'egg'], fiberG: 0, sodiumMg: 142, addedSugarG: 0, micronutrients: 'hierro ~1.2 mg, vitamina B12 ~1.1 µg' },
-  { terms: ['platano', 'plátano', 'banana', 'banano'], fiberG: 2.6, sodiumMg: 1, addedSugarG: 0, micronutrients: 'potasio ~358 mg, vitamina B6 ~0.4 mg' },
-  { terms: ['manzana', 'apple'], fiberG: 2.4, sodiumMg: 1, addedSugarG: 0, micronutrients: 'potasio ~107 mg, vitamina C ~5 mg' },
-  { terms: ['papa', 'patata', 'potato'], fiberG: 2.2, sodiumMg: 6, addedSugarG: 0, micronutrients: 'potasio ~425 mg, vitamina C ~20 mg' },
-  { terms: ['quinua', 'quinoa'], fiberG: 2.8, sodiumMg: 7, addedSugarG: 0, micronutrients: 'magnesio ~64 mg, hierro ~1.5 mg' },
-  { terms: ['brocoli', 'brócoli', 'broccoli'], fiberG: 2.6, sodiumMg: 33, addedSugarG: 0, micronutrients: 'vitamina C ~89 mg, potasio ~316 mg' },
-  { terms: ['leche', 'milk'], fiberG: 0, sodiumMg: 44, addedSugarG: 0, micronutrients: 'calcio ~125 mg, potasio ~150 mg' },
+  { terms: ['res', 'bistec', 'beef'], energyKcal: 250, proteinG: 26, carbohydratesG: 0, fatG: 15, fiberG: 0, sodiumMg: 72, addedSugarG: 0, micronutrients: 'hierro ~2.6 mg, zinc ~4.8 mg' },
+  { terms: ['pollo', 'chicken', 'pavo', 'turkey'], energyKcal: 165, proteinG: 31, carbohydratesG: 0, fatG: 3.6, fiberG: 0, sodiumMg: 74, addedSugarG: 0, micronutrients: 'hierro ~1 mg, zinc ~1 mg' },
+  { terms: ['salmon', 'salmón', 'pescado', 'fish', 'atun', 'atún'], energyKcal: 160, proteinG: 22, carbohydratesG: 0, fatG: 7, fiberG: 0, sodiumMg: 59, addedSugarG: 0, micronutrients: 'potasio ~360 mg, selenio ~25 µg' },
+  { terms: ['carne'], energyKcal: 250, proteinG: 26, carbohydratesG: 0, fatG: 15, fiberG: 0, sodiumMg: 75, addedSugarG: 0, micronutrients: 'hierro ~2 mg, zinc ~4 mg' },
+  { terms: ['arroz', 'rice'], energyKcal: 130, proteinG: 2.7, carbohydratesG: 28, fatG: 0.3, fiberG: 0.4, sodiumMg: 1, addedSugarG: 0, micronutrients: 'magnesio ~12 mg, hierro ~0.2 mg' },
+  { terms: ['lenteja', 'lentil', 'frejol', 'frijol', 'bean', 'garbanzo', 'chickpea'], energyKcal: 116, proteinG: 9, carbohydratesG: 20, fatG: 0.4, fiberG: 7.5, sodiumMg: 2, addedSugarG: 0, micronutrients: 'hierro ~2.5 mg, magnesio ~40 mg' },
+  { terms: ['avena', 'oat'], energyKcal: 389, proteinG: 16.9, carbohydratesG: 66.3, fatG: 6.9, fiberG: 10.6, sodiumMg: 2, addedSugarG: 0, micronutrients: 'hierro ~4.3 mg, magnesio ~177 mg' },
+  { terms: ['huevo', 'egg'], energyKcal: 155, proteinG: 13, carbohydratesG: 1.1, fatG: 11, fiberG: 0, sodiumMg: 142, addedSugarG: 0, micronutrients: 'hierro ~1.2 mg, vitamina B12 ~1.1 µg' },
+  { terms: ['platano', 'plátano', 'banana', 'banano'], energyKcal: 89, proteinG: 1.1, carbohydratesG: 22.8, fatG: 0.3, fiberG: 2.6, sodiumMg: 1, addedSugarG: 0, micronutrients: 'potasio ~358 mg, vitamina B6 ~0.4 mg' },
+  { terms: ['manzana', 'apple'], energyKcal: 52, proteinG: 0.3, carbohydratesG: 13.8, fatG: 0.2, fiberG: 2.4, sodiumMg: 1, addedSugarG: 0, micronutrients: 'potasio ~107 mg, vitamina C ~5 mg' },
+  { terms: ['papa', 'patata', 'potato'], energyKcal: 87, proteinG: 1.9, carbohydratesG: 20, fatG: 0.1, fiberG: 2.2, sodiumMg: 6, addedSugarG: 0, micronutrients: 'potasio ~425 mg, vitamina C ~20 mg' },
+  { terms: ['quinua', 'quinoa'], energyKcal: 120, proteinG: 4.4, carbohydratesG: 21.3, fatG: 1.9, fiberG: 2.8, sodiumMg: 7, addedSugarG: 0, micronutrients: 'magnesio ~64 mg, hierro ~1.5 mg' },
+  { terms: ['brocoli', 'brócoli', 'broccoli'], energyKcal: 34, proteinG: 2.8, carbohydratesG: 6.6, fatG: 0.4, fiberG: 2.6, sodiumMg: 33, addedSugarG: 0, micronutrients: 'vitamina C ~89 mg, potasio ~316 mg' },
+  { terms: ['leche', 'milk'], energyKcal: 61, proteinG: 3.2, carbohydratesG: 4.8, fatG: 3.3, fiberG: 0, sodiumMg: 44, addedSugarG: 0, micronutrients: 'calcio ~125 mg, potasio ~150 mg' },
 ];
 
 function findLocalNutritionReference(food) {
@@ -179,7 +196,7 @@ function findLocalNutritionReference(food) {
   }));
 }
 
-function estimateFromOpenFoodFacts(product, portionGrams) {
+function estimateFromOpenFoodFacts(product, portionGrams, assumedPortion) {
   const nutrients = product.nutriments || {};
   const multiplier = portionGrams / 100;
   const per100g = (...keys) => {
@@ -193,6 +210,10 @@ function estimateFromOpenFoodFacts(product, portionGrams) {
   const fiber = per100g('fiber_100g');
   const sodium = per100g('sodium_100g');
   const addedSugar = per100g('added-sugars_100g', 'added_sugars_100g');
+  const energyKcal = per100g('energy-kcal_100g', 'energy-kcal_value');
+  const protein = per100g('proteins_100g');
+  const carbohydrates = per100g('carbohydrates_100g');
+  const fat = per100g('fat_100g');
   const micros = [
     ['hierro', 'iron_100g', 'mg'],
     ['calcio', 'calcium_100g', 'mg'],
@@ -211,18 +232,23 @@ function estimateFromOpenFoodFacts(product, portionGrams) {
     return [`${label} ~${Number(normalizedValue.toFixed(1))} ${normalizedUnit}`];
   }).slice(0, 3);
 
-  if (fiber === null && sodium === null && addedSugar === null && micros.length === 0) return null;
+  if ([energyKcal, protein, carbohydrates, fat, fiber, sodium, addedSugar].every((value) => value === null)
+    && micros.length === 0) return null;
   return {
+    energyKcal: energyKcal === null ? null : Math.round(energyKcal * multiplier),
+    proteinG: protein === null ? null : Number((protein * multiplier).toFixed(1)),
+    carbohydratesG: carbohydrates === null ? null : Number((carbohydrates * multiplier).toFixed(1)),
+    fatG: fat === null ? null : Number((fat * multiplier).toFixed(1)),
     fiberG: fiber === null ? null : Number((fiber * multiplier).toFixed(1)),
     sodiumMg: sodium === null ? null : Math.round(sodium * multiplier * 1000),
     addedSugarG: addedSugar === null ? null : Number((addedSugar * multiplier).toFixed(1)),
     micronutrients: micros.join(', '),
-    basis: `Datos de ${product.product_name || 'Open Food Facts'} por 100 g, ajustados a ${portionGrams} g; la receta puede variar.`,
+    basis: `Datos de ${product.product_name || 'Open Food Facts'} por 100 g, ajustados a ${portionGrams} g${assumedPortion ? ' (porción estándar aproximada)' : ''}; la receta puede variar.`,
     source: 'Open Food Facts',
   };
 }
 
-async function estimateMealNutrition(food, portionGrams) {
+async function estimateMealNutrition(food, portionGrams, assumedPortion) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 4000);
   try {
@@ -234,7 +260,7 @@ async function estimateMealNutrition(food, portionGrams) {
     if (!response.ok) throw new Error(`Open Food Facts respondió ${response.status}.`);
     const data = await response.json();
     const product = (data.products || []).find((item) => item.nutriments);
-    const estimate = product && estimateFromOpenFoodFacts(product, portionGrams);
+    const estimate = product && estimateFromOpenFoodFacts(product, portionGrams, assumedPortion);
     if (estimate) return estimate;
   } catch (error) {
     console.warn('Open Food Facts no está disponible; se usará la referencia local:', error.message);
@@ -246,18 +272,26 @@ async function estimateMealNutrition(food, portionGrams) {
   if (reference) {
     const multiplier = portionGrams / 100;
     return {
+      energyKcal: Math.round(reference.energyKcal * multiplier),
+      proteinG: Number((reference.proteinG * multiplier).toFixed(1)),
+      carbohydratesG: Number((reference.carbohydratesG * multiplier).toFixed(1)),
+      fatG: Number((reference.fatG * multiplier).toFixed(1)),
       fiberG: Number((reference.fiberG * multiplier).toFixed(1)),
       sodiumMg: Math.round(reference.sodiumMg * multiplier),
       addedSugarG: Number((reference.addedSugarG * multiplier).toFixed(1)),
       micronutrients: reference.micronutrients.replace(/~([\d.]+)\s*(mg|µg)/g, (match, amount, unit) => (
         `~${Number((Number(amount) * multiplier).toFixed(1))} ${unit}`
       )),
-      basis: `Referencia general aproximada por 100 g, ajustada a ${portionGrams} g. Puede variar según el alimento y su preparación.`,
+      basis: `Referencia general aproximada por 100 g, ajustada a ${portionGrams} g${assumedPortion ? ' (porción estándar aproximada)' : ''}. Puede variar según el alimento y su preparación.`,
       source: 'Referencia nutricional local',
     };
   }
 
   return {
+    energyKcal: null,
+    proteinG: null,
+    carbohydratesG: null,
+    fatG: null,
     fiberG: null,
     sodiumMg: null,
     addedSugarG: null,
@@ -276,12 +310,12 @@ app.post('/api/synclife/ai/nutrition-estimate', async (req, res) => {
     if (!food || !portion || !validMealTypes.includes(mealType)) {
       return res.status(400).json({ error: 'Indica el alimento, una porción y una categoría válida para estimar sus nutrientes.' });
     }
-    const portionGrams = getPortionGrams(portion);
-    if (portionGrams === null) {
-      return res.status(400).json({ error: 'Indica una cantidad numérica, por ejemplo 200 g o 1 porción (200 g).' });
+    const portionInfo = getPortionGrams(portion);
+    if (portionInfo === null) {
+      return res.status(400).json({ error: 'Indica la porción en gramos (por ejemplo, 200 g) o una medida como 1 plato o 1 taza.' });
     }
 
-    const estimate = await estimateMealNutrition(food, portionGrams);
+    const estimate = await estimateMealNutrition(food, portionInfo.grams, portionInfo.assumed);
     return res.json({
       ...estimate,
       micronutrients: estimate.micronutrients.slice(0, 120),
